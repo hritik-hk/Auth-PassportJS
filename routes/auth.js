@@ -3,7 +3,7 @@ const passport = require("passport");
 const { genPassword } = require("../lib/passwordUtils");
 const { User } = require("../model/user");
 const path = require("path");
-const { isAuth } = require("../middleware/authMiddleware");
+const { isAuth, isAdmin } = require("../middleware/authMiddleware");
 
 /**
  * -------------- POST ROUTES ----------------
@@ -65,19 +65,31 @@ router.get("/protected-route", isAuth, (req, res) => {
   );
 });
 
+router.get("/admin-route", isAdmin, (req, res) => {
+    res.send(
+      '<h1>Welcome to admin route</h1><p><a href="/auth/logout">Logout and reload</a></p>'
+    );
+  });
+
 // Visiting this route logs the user out
 router.get("/logout", (req, res, next) => {
+  const admin=req.user.role==='admin';
   req.logout(function (err) {
     if (err) {
       return next(err);
     }
-    res.redirect("/auth/protected-route");
+    if(admin){
+        res.redirect("/auth/admin-route");
+    }
+    else{
+        res.redirect("/auth/protected-route");
+    }
   });
 });
 
 router.get("/login-success", (req, res, next) => {
   res.send(
-    '<p>You successfully logged in. --> <a href="/auth/protected-route">Go to protected route</a></p>'
+    '<h3>You successfully logged in...</h3><h3> <a href="/auth/protected-route">Go to protected route</a> </h3><h3><a href="/auth/admin-route">Go to admin route</a></h3>'
   );
 });
 
