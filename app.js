@@ -1,15 +1,13 @@
 const express = require('express');
 require('dotenv').config();
-const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
-const crypto = require('crypto');
-const connection = require('./config/database');
+const {connectToDB} = require('./config/mongoose');
+const MongoStore = require('connect-mongo');
+const authRouter=require('./routes/auth');
 
-
-
-// Package documentation - https://www.npmjs.com/package/connect-mongo
-// const MongoStore = require('connect-mongo')(session);
+//connect to database
+connectToDB();
 
 // Need to require the entire Passport config module so app.js knows about it
 require('./config/passport');
@@ -18,10 +16,8 @@ require('./config/passport');
  * -------------- GENERAL SETUP ----------------
  */
 
-
-
 // Create the Express application
-var app = express();
+const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -32,24 +28,39 @@ app.use(express.static(`${__dirname}/public`));
  * -------------- SESSION SETUP ----------------
  */
 
-// TODO
+const sessionStore = MongoStore.create({
+  mongoUrl: process.env.DB_URL,
+  collectionName: 'sessions'
+})
+
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    store: sessionStore,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24 // == 1 day 
+    }
+}));
 
 /**
  * -------------- PASSPORT AUTHENTICATION ----------------
  */
 
-// app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.initialize());
+app.use(passport.session());
 
-
+app.use((req, res, next) => {
+    console.log(req.session);
+    console.log(req.user);
+    next();
+});
 /**
  * -------------- ROUTES ----------------
  */
 
 // Imports all of the routes from ./routes/index.js
-app.get('/',(req,res)=>{
-    res.sendFile(`${__dirname}/public/home.html`);
-});
+app.use('/auth',authRouter.router);
 
 
 /**
