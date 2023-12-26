@@ -1,80 +1,88 @@
-const router = require('express').Router();
-const passport = require('passport');
-const passwordUtils = require('../lib/passwordUtils');
-const connection = require('../config/database');
-const {User}=require('../model/user');
+const router = require("express").Router();
+const passport = require("passport");
+const { genPassword } = require("../lib/passwordUtils");
+const { User } = require("../model/user");
+const path = require("path");
+const { isAuth } = require("../middleware/authMiddleware");
 
 /**
  * -------------- POST ROUTES ----------------
  */
 
- // TODO
- router.post('/login', (req, res, next) => {});
+// TODO
+router.post(
+  "/login",
+  passport.authenticate("local", {
+    failureRedirect: "/auth/login-failure",
+    successRedirect: "/auth/login-success",
+  })
+);
 
- // TODO
- router.post('/register', (req, res, next) => {});
+// TODO
+router.post("/register", async (req, res) => {
+  try {
+    const { salt, hash } = genPassword(req.body.password);
+    const newUser = new User({
+      email: req.body.email,
+      hash: hash,
+      salt: salt,
+    });
 
+    await newUser.save();
+    res.status(200).redirect("/auth/login");
+  } catch (error) {
+    res.status(400).json(error);
+  }
+});
 
- /**
+/**
  * -------------- GET ROUTES ----------------
  */
 
-router.get('/', (req, res, next) => {
-    res.send('<h1>Home</h1><p>Please <a href="/register">register</a></p>');
+router.get("/", (req, res, next) => {
+  res.sendFile(`../${__dirname}/public/index.html`);
 });
 
 // When you visit http://localhost:3000/login, you will see "Login Page"
-router.get('/login', (req, res, next) => {
-   
-    const form = '<h1>Login Page</h1><form method="POST" action="/login">\
-    Enter Username:<br><input type="text" name="username">\
-    <br>Enter Password:<br><input type="password" name="password">\
-    <br><br><input type="submit" value="Submit"></form>';
-
-    res.send(form);
-
+router.get("/login", (req, res, next) => {
+  res.sendFile(path.join(__dirname, "../public", "login.html"));
 });
 
 // When you visit http://localhost:3000/register, you will see "Register Page"
-router.get('/register', (req, res, next) => {
-
-    const form = '<h1>Register Page</h1><form method="post" action="register">\
-                    Enter Username:<br><input type="text" name="username">\
-                    <br>Enter Password:<br><input type="password" name="password">\
-                    <br><br><input type="submit" value="Submit"></form>';
-
-    res.send(form);
-    
+router.get("/register", (req, res, next) => {
+  res.sendFile(path.join(__dirname, "../public", "register.html"));
 });
 
 /**
  * Lookup how to authenticate users on routes with Local Strategy
  * Google Search: "How to use Express Passport Local Strategy"
- * 
+ *
  * Also, look up what behaviour express session has without a maxage set
  */
-router.get('/protected-route', (req, res, next) => {
-    
-    // This is how you check if a user is authenticated and protect a route.  You could turn this into a custom middleware to make it less redundant
-    if (req.isAuthenticated()) {
-        res.send('<h1>You are authenticated</h1><p><a href="/logout">Logout and reload</a></p>');
-    } else {
-        res.send('<h1>You are not authenticated</h1><p><a href="/login">Login</a></p>');
-    }
+router.get("/protected-route", isAuth, (req, res) => {
+  res.send(
+    '<h1>You are authenticated</h1><p><a href="/auth/logout">Logout and reload</a></p>'
+  );
 });
 
 // Visiting this route logs the user out
-router.get('/logout', (req, res, next) => {
-    req.logout();
-    res.redirect('/protected-route');
+router.get("/logout", (req, res, next) => {
+  req.logout(function (err) {
+    if (err) {
+      return next(err);
+    }
+    res.redirect("/auth/protected-route");
+  });
 });
 
-router.get('/login-success', (req, res, next) => {
-    res.send('<p>You successfully logged in. --> <a href="/protected-route">Go to protected route</a></p>');
+router.get("/login-success", (req, res, next) => {
+  res.send(
+    '<p>You successfully logged in. --> <a href="/auth/protected-route">Go to protected route</a></p>'
+  );
 });
 
-router.get('/login-failure', (req, res, next) => {
-    res.send('You entered the wrong password.');
+router.get("/login-failure", (req, res, next) => {
+  res.send("You entered the wrong credentials");
 });
 
-module.exports = router;
+exports.router = router;
