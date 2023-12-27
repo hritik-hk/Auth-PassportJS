@@ -34,7 +34,7 @@ const sessionStore = MongoStore.create({
 })
 
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: true,
     store: sessionStore,
@@ -50,11 +50,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use((req, res, next) => {
-    console.log(req.session);
-    console.log(req.user);
-    next();
-});
+
 /**
  * -------------- ROUTES ----------------
  */
