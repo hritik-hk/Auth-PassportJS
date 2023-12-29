@@ -39,9 +39,9 @@ router.get(
 // Validate an existing user and issue a JWT
 router.post("/login", async function (req, res, next) {
   try {
-    const user = await User.findOne({ username: req.body.username });
+    const user = await User.findOne({ email: req.body.email });
     if (!user) {
-        return res.status(401).json({ success: false, msg: "invalid credentials" });
+        return res.status(401).json({ success: false, msg: "invalid credentials-u" });
     }
     
     const isValid = utils.validPassword(req.body.password, user.hash, user.salt);
@@ -54,7 +54,7 @@ router.post("/login", async function (req, res, next) {
 
     } else {
 
-        res.status(401).json({ success: false, msg: "invalid credentials" });
+        res.status(401).json({ success: false, msg: "invalid credentials-p" });
 
     }
   } catch (err) {
@@ -74,8 +74,7 @@ router.post("/register", async function (req, res) {
     });
 
     const user = await newUser.save();
-    console.log({ success: true, user: user })
-    res.redirect("/auth/login");
+    res.status(200).json({ success: true, user: user });
   } catch (err) {
     res.json({ success: false, msg: err });
   }
