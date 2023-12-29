@@ -1,1 +1,1 @@
-## implementation of custom-jwt
+## implementation of passportJS-jwt strategy
