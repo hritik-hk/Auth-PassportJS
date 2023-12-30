@@ -11,22 +11,24 @@ const PUB_KEY = fs.readFileSync(pathToKey, 'utf8');
 const options = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: PUB_KEY,
-  algorithms: ['RS256']
+  algorithms: ['RS256'],
+  passReqToCallback: true 
 };
 
 // app.js will pass the global passport object here, and this function will configure it
 module.exports = (passport) => {
     // The JWT payload is passed into the verify callback
-    passport.use(new JwtStrategy(options, async function(jwt_payload, done) {
+    passport.use(new JwtStrategy(options, async function(req,jwt_payload, done) {
         console.log(jwt_payload);
          // We will assign the `sub` property on the JWT to the database ID of user
         try {
-            const user = await User.findOne({_id: jwt_payload.sub});
+            const user = await User.findOne({_id: jwt_payload.sub},"_id email role");
         
             if (!user) {
               return done(null, false); //return null in error and false as user doesnt exist
             }
             else{
+                req.user = user // Assign the user object to req.user
                 return done(null, user);
             }
         

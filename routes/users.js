@@ -32,6 +32,7 @@ router.get(
       .json({
         success: true,
         msg: "You are successfully authenticated to this route!",
+        user:req.user
       });
   }
 );
